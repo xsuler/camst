@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8"> {% load static %}
+    <script type="text/javascript" charset="utf-8" src="{% static 'campip/play.js' %}"></script>
+</head>
+
+<body>
+        <menu>
+            <li id="ret">
+                <div class="active">menu</div>
+            </li>
+            <li id="ret" onclick=next()>
+                <div>next page</div>
+            </li>
+            <li id="ret" onclick=last()>
+                <div>last page</div>
+            </li>
+            {% if is_admin %}
+            <li id="ret" onclick=grab()>
+                <div>re-grab news</div>
+            </li>
+            <li id="ret" onclick=delet()>
+                <div>delete news</div>
+            </li>
+            <li id="ret" onclick=recove()>
+                <div>recover news</div>
+            </li>
+            {% endif %}
+        </menu>
+        <p id="grab" ></p>
+        <p id="white">current page:  {{ curpage }}</p>
+        <p id="cpage" hidden>{{ curpage }}</p>
+        <form action="/polls/news/search/" method="post">
+            {% csrf_token %} {{ form_s }}
+            <input type="submit" value="Search">
+        </form>
+        {% if is_admin %}
+        <div id="white">welcome, the one above all!</div>
+        <form action="/polls/news/admin/" method="get">
+            <input type="submit" value="logout">
+        </form>
+        {% else %}
+        <form action="/polls/news/admin/" method="post">
+            {% csrf_token %} {{ form }}
+            <input type="submit" value="Submit">
+        </form>
+        {% endif %}
+    </nav>
+    <section>
+        <div id="page">
+        </div>
+        <table id="view">
+            <tbody>
+                <tr>
+                    <th>title</th>
+                    <th>source</th>
+                    <th>date</th>
+                    {% if is_admin %}
+                    <th>delete</th>
+                    {% endif %}
+                </tr>
+                {% for new in newsl %}
+                <tr onclick=load({{ new.id }})>
+                    <td>{{ new.title }}</td>
+                    <td>{{ new.source }}</td>
+                    <td>{{ new.date }}</td>
+                    {% if is_admin %}
+                        {% if is_trash %}
+                    <td><input id="del" value="Recover" type="Submit" onclick=rec({{ new.id }})></td>
+                        {% else %}
+                    <td><input id="del" value="Delete" type="Submit" onclick=del({{ new.id }})></td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <footer>
+        Copyright (c) 2018 Sule
+    </footer>
+</body>
+
+</html>
+<!-- 提倡用CSS动画实现视觉样式； -->
