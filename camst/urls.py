@@ -18,4 +18,6 @@ from django.urls import path,include
 
 urlpatterns = [
     path('live', include('campip.urls')),
+    path('admin/', admin.site.urls),
+    path('user/', include('user.urls')),
 ]

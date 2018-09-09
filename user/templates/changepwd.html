@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>修改密码</title>
+</head>
+<body>
+    <h1>修改密码页面：</h1>
+    <a href="/user/login" class="return">返回 &gt;</a>
+    <form action="changepwd" method="POST">
+        <p>
+            <label for="username">用户名</label>
+            <input id="username" type='text' name="user"/>
+        </p>
+        <p>
+            <label for="password">原密码</label>
+            <input id="password" type='password' name="pwd"/>
+        </p>
+        <p>
+            <label for="password">新密码</label>
+            <input id="password" type='password' name="newpwd"/>
+            <input type="submit" value="修改密码"/>
+            <span style="color:red">{{ error_msg }}</span>
+        </p>
+    </form>
+</body>
+</html>
