@@ -9,6 +9,7 @@ import face_recognition
 from threading import Lock
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from .models import Alarm
 
 readyLk = Lock()
 resultLk = Lock()
@@ -35,7 +36,7 @@ tfnet_face = TFNet(options_face)
 resultF = ([], [])
 ready = True
 memo = []
-channel_name=''
+channel_name = ''
 
 
 def send(frame):
@@ -60,11 +61,12 @@ def send(frame):
             memo.append(face)
             rec += 1
 
-    async_to_sync(
-        channel_layer.send)(channel_name, {
-            'type': 'send.alarm',
-            'info': '%d new in %d face' % (rec, len(faces))
-        })
+    alarmc = '%d new in %d face' % (rec, len(faces))
+    async_to_sync(channel_layer.send)(channel_name, {
+        'type': 'send.alarm',
+        'info': alarmc
+    })
+    Alarm.objects.create(content=alarmc)
 
     print(time.time() - start)
     with resultLk:

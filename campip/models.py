@@ -1,3 +1,6 @@
 from django.db import models
+import datetime
 
-# Create your models here.
+class Alarm(models.Model):
+    content= models.TextField()
+    time=models.DateTimeField(auto_now_add=True)

@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8"> {% load static %}
     <link rel="stylesheet" href="{% static 'panel/style.css' %}"> {% load static %}
-    <script type="text/javascript" charset="utf-8" src="{% static 'panel/play.js' %}"></script>
+    <script type="text/javascript" charset="utf-8" src="{% static 'panel/play.js' %}">
+    </script>
 </head>
 
 <body>
@@ -15,26 +17,46 @@
             <li id="ret">
                 <div class="active">menu</div>
             </li>
-            <li id="ret" onclick=alarm()>
-                <div>alarm</div>
-            </li>
         </menu>
+
+        {% if is_auth %}
+        <div id="white">welcome, the one above all!</div>
+        <form action="/panel/login/" method="get">
+            <input type="submit" value="logout">
+        </form>
+        {% else %}
+        <form action="/panel/login/" method="post">
+            {% csrf_token %} {{ form }}
+            <input type="submit" value="Login">
+        </form>
+        {% endif %}
+
     </nav>
     <section>
-        <img id="view" style="-webkit-user-select: none;" src="http://127.0.0.1:3000/live">
-
+        <div id="alarm"></div>
+        <img id="view" style="-webkit-user-select: none;" src="http://127.0.0.1:3000/live"> {% if is_auth %}
         <div id="page">
             <table>
-                <tbody id="alarm">
-                <tr>
-                    <th>alarm</th>
-                </tr>
+                <tbody>
+                    <tr>
+                        <th>alarm</th>
+                    </tr>
+                    {% for alarm in alarms %}
+                    <tr>
+                        <th>{{alarm.content}}</th>
+                    </tr>
+                    <tr>
+                        <th>{{alarm.time}}</th>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% endif %}
     </section>
     <footer>
         Copyright (c) 2018 Sule
     </footer>
 </body>
+
 </html>

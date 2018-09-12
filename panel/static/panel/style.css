@@ -1,6 +1,6 @@
 #view {
     border-collapse: collapse;
-    width: 85%;
+    width: 75%;
 }
 
 #page td,
@@ -106,22 +106,16 @@ footer {
     position:sticky;
     height: 505px;
     top: 20px;
-    width: 15%;
+    width: 25%;
     float: right;
     overflow: auto;
 }
 
-#white {
-    color: white;
-}
-
+#alarm,
+#white,
+#cpage,
+#grab,
 #status{
-    color: white;
-}
-#cpage{
-    color: white;
-}
-#grab{
     color: white;
 }
 label[for=id_line] {
