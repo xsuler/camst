@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"> {% load static %}
+    <link rel="stylesheet" href="{% static 'panel/style.css' %}"> {% load static %}
+    <script type="text/javascript" charset="utf-8" src="{% static 'panel/play.js' %}"></script>
+</head>
+
+<body>
+    <header>
+        <h3>&nbsp;alarm bot</h3>
+    </header>
+    <nav>
+        <menu>
+            <li id="ret">
+                <div class="active">menu</div>
+            </li>
+            <li id="ret" onclick=alarm()>
+                <div>alarm</div>
+            </li>
+        </menu>
+    </nav>
+    <section>
+        <img id="view" style="-webkit-user-select: none;" src="http://127.0.0.1:3000/live">
+
+        <div id="page">
+            <table>
+                <tbody id="alarm">
+                <tr>
+                    <th>alarm</th>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <footer>
+        Copyright (c) 2018 Sule
+    </footer>
+</body>
+</html>

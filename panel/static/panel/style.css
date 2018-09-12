@@ -1,0 +1,138 @@
+#view {
+    border-collapse: collapse;
+    width: 85%;
+}
+
+#page td,
+#page th {
+    padding: 5px;
+}
+
+#page tr:nth-child(even) {
+    background-color: #dddddd;
+}
+
+#page tr:nth-child(odd) {
+    background-color: #bcbcbc;
+}
+
+#page tr:hover {
+    background-color: #aaaaaa;
+}
+
+#page th {
+    text-align: left;
+    background-color: #383c47;
+    color: #ffffff;
+}
+
+p {
+    color: #ffffff
+}
+
+body {
+    background-color: #121212;
+}
+
+menu li:nth-child(even) {
+    background-color: #dddddd;
+}
+
+menu li:nth-child(odd) {
+    background-color: #bcbcbc;
+}
+
+menu {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    background-color: #eeeeee;
+}
+
+li div {
+    display: block;
+    color: #383c47;
+    padding: 8px;
+}
+
+li div.active {
+    background-color: #383c47;
+    color: white;
+}
+
+li div:hover:not(.active) {
+    background-color: #555;
+    color: white;
+}
+
+header {
+    background-color: #383c47;
+    color: white;
+    padding: 10px;
+}
+
+nav {
+    background-color: #383c47;
+    height: 100%;
+    width: 15%;
+    float: left;
+}
+
+section {
+    width: 85%;
+    float: right;
+}
+
+footer {
+    clear: both;
+    background-color: #383c47;
+    color: #ffffff;
+    padding: 5px;
+    text-align: center;
+}
+
+#ret {
+    clear: both;
+    text-align: center;
+}
+
+#icon {
+    width: 60px;
+    height: 60px;
+}
+
+#page {
+    position:sticky;
+    height: 505px;
+    top: 20px;
+    width: 15%;
+    float: right;
+    overflow: auto;
+}
+
+#white {
+    color: white;
+}
+
+#status{
+    color: white;
+}
+#cpage{
+    color: white;
+}
+#grab{
+    color: white;
+}
+label[for=id_line] {
+    color: white;
+}
+
+
+label[for=id_username] {
+    color: white;
+}
+
+label[for=id_password] {
+    color: white;
+}

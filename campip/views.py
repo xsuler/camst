@@ -1,62 +1,76 @@
-from django.shortcuts import render
-from django.http import HttpResponse, StreamingHttpResponse
-import numpy as np
+from django.http import StreamingHttpResponse
 import cv2
 from django.views.decorators import gzip
 from darkflow.net.build import TFNet
 import time
-from multiprocessing import Queue
 from rx import subjects
 from rx.concurrency import NewThreadScheduler
-from threading import Thread,Lock
-readyLk =Lock()
-resultLk =Lock()
-bombLk =Lock()
+import face_recognition
+from threading import Lock
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
-options = {
+readyLk = Lock()
+resultLk = Lock()
+bombLk = Lock()
+
+options_object = {
     "model": "cfg/yolov2-tiny.cfg",
     "load": "bin/yolov2-tiny.weights",
-    "threshold": 0.3
+    "labels": "labels_object",
+    "threshold": 0.5
 }
 
-tfnet = TFNet(options)
+channel_layer = get_channel_layer()
 
-resultF = []
+options_face = {
+    "model": "cfg/tiny-yolo-face.cfg",
+    "load": "bin/tiny-yolo-face.weights",
+    "labels": "labels_face",
+    "threshold": 0.5
+}
 
-queue_che= Queue()
+tfnet_object = TFNet(options_object)
+tfnet_face = TFNet(options_face)
+resultF = ([], [])
+ready = True
+memo = []
+channel_name=''
 
-ready=True
-
-bomb=False
-
-def bomber():
-    global bomb
-    bomb=False
-    time.sleep(0)
-    with bombLk:
-        bomb=True
-
-def delayT():
-    return lambda:time.sleep(0)
 
 def send(frame):
-    global ready,resultF
+    global ready, resultF
     with readyLk:
-        ready=False
+        ready = False
+    start = time.time()
 
-    thread = Thread(target = delayT())
-    thread.start()
+    objects = tfnet_object.return_predict(frame)
+    faces = tfnet_face.return_predict(frame)
 
-    start=time.time()
-    results = tfnet.return_predict(frame)
-    print(time.time()-start)
+    form_faces = list(
+        map(
+            lambda result: (result['topleft']['x'], result['topleft']['y'], result['bottomright']['x'], result['bottomright']['y']),
+            faces))
+    encodings = face_recognition.face_encodings(frame, form_faces)
+
+    rec = 0
+    for face in encodings:
+        matches = face_recognition.compare_faces(memo, face, tolerance=0.35)
+        if not any(matches):
+            memo.append(face)
+            rec += 1
+
+    async_to_sync(
+        channel_layer.send)(channel_name, {
+            'type': 'send.alarm',
+            'info': '%d new in %d face' % (rec, len(faces))
+        })
+
+    print(time.time() - start)
     with resultLk:
-        resultF=results
-
-    thread.join()
-
+        resultF = (faces, objects)
     with readyLk:
-        ready=True
+        ready = True
 
 
 obs = subjects.Subject()
@@ -64,44 +78,42 @@ obs.observe_on(NewThreadScheduler()).subscribe(on_next=send)
 
 
 def stream():
-    rtmp = "http://183.251.61.207/PLTV/88888888/224/3221225925/index.m3u8"
+    rtmp = "http://ivi.bupt.edu.cn/hls/cctv6hd.m3u8"
     stream = cv2.VideoCapture(rtmp)
-    thread = Thread(target = bomber)
-    thread.start()
-    flag=True
-    while False:
-        ret,frame=stream.read()
-        if flag:
-            obs.on_next(frame)
-            flag=False
-        queue_che.put(frame)
-        with bombLk:
-            if bomb:
-                break
 
     while True:
-        ret,fm0=stream.read()
-        queue_che.put(fm0)
-        frame=queue_che.get()
+        frame = stream.read()[1]
 
         with readyLk:
             if ready:
-                obs.on_next(fm0)
+                obs.on_next(frame)
 
         with resultLk:
-            results=resultF
-        for result in results:
-            cv2.putText(frame,result['label']+'  '+str(result['confidence']),(result['topleft']['x'], result['topleft']['y']), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,0), 2);
+            faces, objects = resultF
 
-            cv2.rectangle(
-                frame, (result['topleft']['x'], result['topleft']['y']),
-                (result['bottomright']['x'], result['bottomright']['y']),
-                (255, 255, 0), 1)
+        for result in faces:
+            drawLabel(frame,
+                      result['label'] + '  ' + str(result['confidence']),
+                      result['topleft']['x'], result['topleft']['y'],
+                      result['bottomright']['x'], result['bottomright']['y'],
+                      (5, 255, 5))
 
-        ret, jpeg = cv2.imencode('.jpg', frame)
+        for result in objects:
+            drawLabel(frame,
+                      result['label'] + '  ' + str(result['confidence']),
+                      result['topleft']['x'], result['topleft']['y'],
+                      result['bottomright']['x'], result['bottomright']['y'],
+                      (255, 255, 5))
+
+        jpeg = cv2.imencode('.jpg', frame)[1]
         bts = jpeg.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + bts + b'\r\n\r\n')
+
+
+def drawLabel(img, txt, l, t, r, b, color):
+    cv2.putText(img, txt, (l, t + 20), cv2.FONT_HERSHEY_PLAIN, 2, color, 2)
+    cv2.rectangle(img, (l, t), (r, b), color, 1)
 
 
 @gzip.gzip_page

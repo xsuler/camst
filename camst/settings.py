@@ -38,7 +38,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'user',
+    'panel',
+    'channels',
 ]
+
+ASGI_APPLICATION = 'camst.routing.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND':  'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('localhost', 6379)],
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
