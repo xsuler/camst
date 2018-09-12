@@ -4,6 +4,13 @@ from campip.models import Alarm
 from .forms import LoginForm
 import hashlib
 
+# delete alarm
+# time-order
+# add user
+# change pwd
+# config alarm
+# other detection
+# mp4
 
 def login(request):
     if request.method == 'POST':

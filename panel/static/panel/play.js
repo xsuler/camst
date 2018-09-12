@@ -4,13 +4,17 @@ function fromStr(str) {
     return div.firstChild;
 }
 
-function alarm(){
+function socket() {
     ws = new WebSocket('ws://127.0.0.1:3000/ws/alarm/');
     ws.onmessage = function(message) {
-        data=JSON.parse(message.data);
-        alarm=document.getElementById("alarm");
-        alarm.textContent=data['info'];
+        data = JSON.parse(message.data);
+        alarm = document.getElementById("alarm");
+        alarm.textContent = data['info'];
     };
 }
 
-alarm();
+function alarm(){
+    table = document.getElementById("alarm_table");
+}
+
+socket();

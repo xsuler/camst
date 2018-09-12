@@ -17,6 +17,10 @@
             <li id="ret">
                 <div class="active">menu</div>
             </li>
+            <li id="ret" onclick=alarm()>
+                <div>check alarm</div>
+            </li>
+
         </menu>
 
         {% if is_auth %}
@@ -36,21 +40,22 @@
         <div id="alarm"></div>
         <img id="view" style="-webkit-user-select: none;" src="http://127.0.0.1:3000/live"> {% if is_auth %}
         <div id="page">
+            <div id="alarm_table" >
             <table>
                 <tbody>
                     <tr>
-                        <th>alarm</th>
+                        <th>content</th>
+                        <th>time</th>
                     </tr>
                     {% for alarm in alarms %}
                     <tr>
                         <th>{{alarm.content}}</th>
-                    </tr>
-                    <tr>
                         <th>{{alarm.time}}</th>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
         {% endif %}
     </section>
