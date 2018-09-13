@@ -1,6 +1,6 @@
 #view {
     border-collapse: collapse;
-    width: 75%;
+    width: 65%;
 }
 
 #page td,
@@ -105,8 +105,7 @@ footer {
 #page {
     position:sticky;
     height: 505px;
-    top: 20px;
-    width: 25%;
+    width: 35%;
     float: right;
     overflow: auto;
 }
@@ -123,10 +122,10 @@ label[for=id_line] {
 }
 
 
-label[for=id_username] {
-    color: white;
-}
-
-label[for=id_password] {
+label[for=id_oldpassword]
+label[for=id_newpassword],
+label[for=id_password],
+label[for=id_username],
+{
     color: white;
 }

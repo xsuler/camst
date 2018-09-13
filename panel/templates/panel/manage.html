@@ -1,0 +1,37 @@
+{% extends "panel/panel.html" %} {% block page %}
+<div>
+    <form action="/panel/userpage/opt/0" method="post">
+        {% csrf_token %}
+        <table>
+            {{ form_pwd.as_table }}
+        </table>
+        <input type="submit" value="change password">
+    </form>
+</div>
+{% if is_god %}
+<div>
+    <form action="/panel/userpage/opt/1" method="post">
+        {% csrf_token %}
+        <table>
+            {{ form_reg.as_table }}
+        </table>
+        <input type="submit" value="add user">
+    </form>
+</div>
+<div>
+    <table>
+        <tbody>
+            <tr>
+                <th>username</th>
+                <th>state</th>
+            </tr>
+            {% for user in userlist %}
+            <tr onclick=deluser({{user.id}})>
+                <th>{{user.username}}</th>
+                <th>{{user.state}}</th>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %} {% endblock page %}

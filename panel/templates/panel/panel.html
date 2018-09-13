@@ -17,10 +17,12 @@
             <li id="ret">
                 <div class="active">menu</div>
             </li>
-            <li id="ret" onclick=alarm()>
+            <li id="ret" onclick=getalarm()>
                 <div>check alarm</div>
             </li>
-
+            <li id="ret" onclick=userpage()>
+                <div>manage user</div>
+            </li>
         </menu>
 
         {% if is_auth %}
@@ -38,26 +40,10 @@
     </nav>
     <section>
         <div id="alarm"></div>
-        <img id="view" style="-webkit-user-select: none;" src="http://127.0.0.1:3000/live"> {% if is_auth %}
+        <img id="view" style="-webkit-user-select: none;" src="http://127.0.0.1:3000/live">
         <div id="page">
-            <div id="alarm_table" >
-            <table>
-                <tbody>
-                    <tr>
-                        <th>content</th>
-                        <th>time</th>
-                    </tr>
-                    {% for alarm in alarms %}
-                    <tr>
-                        <th>{{alarm.content}}</th>
-                        <th>{{alarm.time}}</th>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            </div>
+            {% block page %} {% endblock page %}
         </div>
-        {% endif %}
     </section>
     <footer>
         Copyright (c) 2018 Sule

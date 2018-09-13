@@ -1,0 +1,18 @@
+{% extends "panel/panel.html" %} {% block page %}
+<div id="alarm_table">
+    <table>
+        <tbody>
+            <tr>
+                <th>content</th>
+                <th>time</th>
+            </tr>
+            {% for alarm in alarms %}
+            <tr onclick=delalarm({{alarm.id}})>
+                <th>{{alarm.content}}</th>
+                <th>{{alarm.time}}</th>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock page %}
