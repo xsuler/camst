@@ -110,18 +110,15 @@ footer {
     overflow: auto;
 }
 
-#alarm,
+#alarm{
+    text-align: center;
+    border: 4px solid #ff8a38;
+    color: white;
+}
+
+
+label[for=id_line],
 #white,
-#cpage,
-#grab,
-#status{
-    color: white;
-}
-label[for=id_line] {
-    color: white;
-}
-
-
 label[for=id_oldpassword]
 label[for=id_newpassword],
 label[for=id_password],

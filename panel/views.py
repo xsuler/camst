@@ -41,9 +41,10 @@ def getsession(request, key, default):
 def getalarm(request):
     is_auth = getsession(request, 'is_auth', False)
     alarms = []
+    usernm = getsession(request, 'username', 'stranger')
     if is_auth:
         alarms = Alarm.objects.order_by('-time')
-        context = {'is_auth': is_auth, 'alarms': alarms}
+        context = {'is_auth': is_auth, 'alarms': alarms, 'username': usernm}
         return render(request, 'panel/alarm.html', context)
     return HttpResponseForbidden()
 
@@ -86,6 +87,7 @@ def userpage(request):
     form_pwd = ChangePswForm()
     form_reg = RegisterForm()
     userlist = []
+    usernm = getsession(request, 'username', 'stranger')
     if is_god:
         userlist = User.objects.filter(level=1)
     if is_auth:
@@ -94,7 +96,8 @@ def userpage(request):
             'is_god': is_god,
             'form_pwd': form_pwd,
             'form_reg': form_reg,
-            'userlist': userlist
+            'userlist': userlist,
+            'username': usernm
         }
         return render(request, 'panel/manage.html', context)
     return HttpResponseForbidden()
@@ -102,9 +105,15 @@ def userpage(request):
 
 def panel(request):
     is_auth = getsession(request, 'is_auth', False)
+    usernm = getsession(request, 'username', 'stranger')
     form = LoginForm()
     alarms = []
-    context = {'is_auth': is_auth, 'alarms': alarms, 'form': form}
+    context = {
+        'is_auth': is_auth,
+        'alarms': alarms,
+        'form': form,
+        'username': usernm
+    }
     return render(request, 'panel/panel.html', context)
 
 

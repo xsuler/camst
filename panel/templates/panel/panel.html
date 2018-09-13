@@ -26,7 +26,7 @@
         </menu>
 
         {% if is_auth %}
-        <div id="white">welcome, the one above all!</div>
+        <div id="white">welcome, the {{username}}!</div>
         <form action="/panel/login/" method="get">
             <input type="submit" value="logout">
         </form>
