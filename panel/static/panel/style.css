@@ -97,11 +97,6 @@ footer {
     text-align: center;
 }
 
-#icon {
-    width: 60px;
-    height: 60px;
-}
-
 #page {
     position:sticky;
     height: 505px;
@@ -118,11 +113,15 @@ footer {
 
 
 label[for=id_line],
-#white,
 label[for=id_oldpassword]
 label[for=id_newpassword],
 label[for=id_password],
 label[for=id_username],
+{
+    color: white;
+}
+
+#white
 {
     color: white;
 }

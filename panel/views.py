@@ -9,7 +9,6 @@ import hashlib
 # other detection
 # mp4
 
-
 def login(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
