@@ -2,20 +2,20 @@ from django.http import StreamingHttpResponse, HttpResponse
 import cv2
 from django.views.decorators import gzip
 from darkflow.net.build import TFNet
+from threading import Lock
 import time
 from rx import subjects
 from rx.concurrency import NewThreadScheduler
 import face_recognition
-from threading import Lock
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Alarm
 
 options_object = {
-    "model": "cfg/yolov2.cfg",
-    "load": "bin/yolov2.weights",
+    "model": "cfg/yolov2-tiny.cfg",
+    "load": "bin/yolov2-tiny.weights",
     "labels": "labels_object",
-    "threshold": 0.5
+    "threshold": 0.3
 }
 
 channel_layer = get_channel_layer()
@@ -27,21 +27,15 @@ channel_layer = get_channel_layer()
 #     "threshold": 0.5
 # }
 
-readyLk = Lock()
-readydecLk = Lock()
-resultLk = Lock()
-refreshLk = Lock()
 tfnet_object = TFNet(options_object)
 # tfnet_face = TFNet(options_face)
-boxes_track = {}
-ready = True
-ready_dec = True
-memo = []
 channel_name = ''
 trackers = {}
 labels = {}
 confidences = {}
-refreshFlag = True
+boxes_track = {}
+flags = {'refresh': True, 'ready_track': True, 'ready_dec': True}
+
 resize_rate = 1
 unique_id = 0
 
@@ -71,73 +65,74 @@ unique_id = 0
 
 
 def detect(frame):
-    global labels, confidences, trackers, ready_dec, remain_record, unique_id
+    global labels, confidences, trackers, remain_record, unique_id
+    print('come in')
+    # flags['ready_dec'] = False
     start = time.time()
-    with readydecLk:
-        ready_dec = False
     remain_record = time.time()
     small = cv2.resize(frame, (0, 0), fx=resize_rate, fy=resize_rate)
     result_detect = tfnet_object.return_predict(frame)
 
     for result in result_detect:
         # tracker = cv2.TrackerCSRT_create()
-        box=(result['topleft']['x'] * resize_rate, result['topleft']['y'] * resize_rate, result['bottomright']['x'] * resize_rate - result['topleft']['x'] * resize_rate, result['bottomright']['y'] * resize_rate - result['topleft']['y'] * resize_rate)
+        box = (result['topleft']['x'] * resize_rate,
+            result['topleft']['y'] * resize_rate,
+            result['bottomright']['x'] * resize_rate -
+            result['topleft']['x'] * resize_rate,
+            result['bottomright']['y'] * resize_rate -
+            result['topleft']['y'] * resize_rate)
         tracker = cv2.TrackerKCF_create()
         tracker.init(small, box)
         trackers[unique_id] = tracker
-        labels[unique_id]=result['label']
-        confidences[unique_id]=result['confidence']
+        labels[unique_id] = result['label']
+        confidences[unique_id] = result['confidence']
         unique_id += 1
+
     print(time.time() - start)
-    with readydecLk:
-        ready_dec = True
+    print('come out')
+
+    # flags['ready_dec'] = True
 
 
-obs_dec = subjects.Subject()
-obs_dec.observe_on(NewThreadScheduler()).subscribe(on_next=detect)
+# obs_dec = subjects.Subject()
+# obs_dec.observe_on(NewThreadScheduler()).subscribe(on_next=detect)
 
 remain_tolarence = 2
 remain_record = 0
 
 
 def send(frame):
-    global ready, refreshFlag, boxes_track
-    with readyLk:
-        ready = False
+    global boxes_track, flags
+    flags['ready_track'] = False
 
     small = cv2.resize(frame, (0, 0), fx=resize_rate, fy=resize_rate)
 
-    with refreshLk:
-        if refreshFlag:
-            with readydecLk:
-                if ready_dec:
-                    obs_dec.on_next(frame)
-                    refreshFlag = False
-        else:
-            success = True
+    if flags['refresh'] and flags['ready_dec']:
+        # obs_dec.on_next(frame)
+        detect(frame)
+        flags['refresh'] = False
+    else:
+        success = True
+        for i in trackers.keys():
+            success, box = trackers[i].update(small)
+            if not success:
+                trackers.pop(i)
+                boxes_track.pop(i)
+                labels.pop(i)
+                confidences.pop(i)
+            else:
+                boxes_track[i] = box
 
-            with resultLk:
-                for i, tracker in trackers.copy().items():
-                    success, box = tracker.update(small)
-                    if not success:
-                        del trackers[i]
-                        del boxes_track[i]
-                        del labels[i]
-                        del confidences[i]
-                    else:
-                        boxes_track[i] = box
+            # remain=time.time() - remain_record
+            # if remain > remain_tolarence:
+            #     alarmc = '%d new in %d face' % (rec, len(faces))
+            #     async_to_sync(channel_layer.send)(channel_name, {
+            #         'type': 'send.alarm',
+            #         'info': alarmc
+            #     })
+            #     Alarm.objects.create(content=alarmc)
 
-                # remain=time.time() - remain_record
-                # if remain > remain_tolarence:
-                #     alarmc = '%d new in %d face' % (rec, len(faces))
-                #     async_to_sync(channel_layer.send)(channel_name, {
-                #         'type': 'send.alarm',
-                #         'info': alarmc
-                #     })
-                #     Alarm.objects.create(content=alarmc)
-
-    with readyLk:
-        ready = True
+    flags['ready_track'] = True
 
 
 obs_track = subjects.Subject()
@@ -149,31 +144,27 @@ def stream():
     rtmp = "http://ivi.bupt.edu.cn/hls/cctv5phd.m3u8"
     # rtmp='http://153.156.230.207:8084/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000'
     # rtmp='rtsp://admin:admin@59.66.68.38:554/cam/realmonitor?channel=1&subtype=0'
-    print(0)
     stream = cv2.VideoCapture(rtmp)
     frame = stream.read()[1]
     resize_rate = 800 / frame.shape[1]
     print('resize_rate: %f' % resize_rate)
-    print(0)
     while True:
         frame = stream.read()[1]
-        print(0)
 
-        # with readyLk:
-            # if ready:
-                # obs_track.on_next(frame)
+        if flags['ready_track']:
+            obs_track.on_next(frame)
 
-        with resultLk:
-            boxes = boxes_track
+        boxes = boxes_track
 
-        for i, box in boxes.items():
-            drawLabel(
-                frame,
-                'id: ' + str(i) + ' ' + labels[i] + str(confidences[i]),
-                int(box[0] / resize_rate), int(box[1] / resize_rate),
-                int(box[0] / resize_rate + box[2] / resize_rate),
-                int(box[1] / resize_rate + box[3] / resize_rate),
-                (255, 255, 5))
+
+        for i in boxes.keys():
+            box=boxes[i]
+            drawLabel(frame,
+                    'id: ' + str(i) + ' ' + labels[i] + str(confidences[i]),
+                    int(box[0] / resize_rate), int(box[1] / resize_rate),
+                    int(box[0] / resize_rate + box[2] / resize_rate),
+                    int(box[1] / resize_rate + box[3] / resize_rate),
+                    (255, 255, 5))
 
         jpeg = cv2.imencode('.jpg', frame)[1]
         bts = jpeg.tobytes()
@@ -193,7 +184,6 @@ def cam(request):
 
 
 def refresh(request):
-    global refreshFlag
-    with refreshLk:
-        refreshFlag = True
+    global flags
+    flags['refresh'] = True
     return HttpResponse('ok')
