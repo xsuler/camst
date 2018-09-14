@@ -9,7 +9,6 @@ import hashlib
 # other detection
 # mp4
 
-
 def login(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -72,12 +71,23 @@ def useropt(request, opt):
         if request.method == 'POST':
             form = RegisterForm(request.POST)
             if form.is_valid():
-                user = User(
-                    username=form.cleaned_data['username'],
-                    password=hashlib.sha224(
-                        form.cleaned_data['password'].encode()).hexdigest())
-                user.save()
-                return redirect('/panel/userpage/')
+                username = form.cleaned_data['username']
+                password = form.cleaned_data['password']
+                password2 = form.cleaned_data['password2']
+                if username == "god":
+                    return redirect('/panel/userpage')
+                if not User.objects.all().filter(username=username):
+                    if form.pwd_validate(password, password2):
+                        user = User(
+                            username=username,
+                            password=hashlib.sha224(password.encode()).hexdigest())
+                        user.save()
+                        return redirect('/panel/userpage/')
+                    else:
+                        return redirect('/panel/userpage')
+                else:
+                    return redirect('/panel/userpage')
+            
     return HttpResponseForbidden()
 
 

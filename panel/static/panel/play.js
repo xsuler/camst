@@ -31,6 +31,10 @@ function getalarm() {
     window.open('/panel/getalarm/', '_self');
 }
 
+function refresh() {
+    httpGet('/live/refresh/', (t) => {
+    });
+}
 function delalarm(id) {
     url = '/panel/delalarm/';
     if (confirm("want to delete this record?")) {
@@ -39,6 +43,7 @@ function delalarm(id) {
         });
     }
 }
+
 function deluser(id) {
     url = '/panel/userpage/deluser/';
     if (confirm("want to delete this user?")) {
