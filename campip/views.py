@@ -2,7 +2,6 @@ from django.http import StreamingHttpResponse, HttpResponse
 import cv2
 from django.views.decorators import gzip
 from darkflow.net.build import TFNet
-from threading import Lock
 import time
 from rx import subjects
 from rx.concurrency import NewThreadScheduler
@@ -30,14 +29,13 @@ channel_layer = get_channel_layer()
 tfnet_object = TFNet(options_object)
 # tfnet_face = TFNet(options_face)
 channel_name = ''
-trackers = {}
 labels = {}
 confidences = {}
 boxes_track = {}
 flags = {'refresh': True, 'ready_track': True, 'ready_dec': True}
 
+multiTracker = None
 resize_rate = 1
-unique_id = 0
 
 # objects = tfnet_object.return_predict(frame)
 
@@ -65,37 +63,33 @@ unique_id = 0
 
 
 def detect(frame):
-    global labels, confidences, trackers, remain_record, unique_id
-    print('come in')
-    # flags['ready_dec'] = False
+    global labels, confidences, remain_record, multiTracker
+    flags['ready_dec'] = False
     start = time.time()
     remain_record = time.time()
     small = cv2.resize(frame, (0, 0), fx=resize_rate, fy=resize_rate)
     result_detect = tfnet_object.return_predict(frame)
-
-    for result in result_detect:
+    multiTracker = cv2.MultiTracker_create()
+    for i, result in enumerate(result_detect):
         # tracker = cv2.TrackerCSRT_create()
         box = (result['topleft']['x'] * resize_rate,
-            result['topleft']['y'] * resize_rate,
-            result['bottomright']['x'] * resize_rate -
-            result['topleft']['x'] * resize_rate,
-            result['bottomright']['y'] * resize_rate -
-            result['topleft']['y'] * resize_rate)
+               result['topleft']['y'] * resize_rate,
+               result['bottomright']['x'] * resize_rate -
+               result['topleft']['x'] * resize_rate,
+               result['bottomright']['y'] * resize_rate -
+               result['topleft']['y'] * resize_rate)
         tracker = cv2.TrackerKCF_create()
-        tracker.init(small, box)
-        trackers[unique_id] = tracker
-        labels[unique_id] = result['label']
-        confidences[unique_id] = result['confidence']
-        unique_id += 1
+        labels[i] = result['label']
+        confidences[i] = result['confidence']
+        multiTracker.add(tracker, small, box)
 
     print(time.time() - start)
-    print('come out')
 
-    # flags['ready_dec'] = True
+    flags['ready_dec'] = True
 
 
-# obs_dec = subjects.Subject()
-# obs_dec.observe_on(NewThreadScheduler()).subscribe(on_next=detect)
+obs_dec = subjects.Subject()
+obs_dec.observe_on(NewThreadScheduler()).subscribe(on_next=detect)
 
 remain_tolarence = 2
 remain_record = 0
@@ -108,20 +102,16 @@ def send(frame):
     small = cv2.resize(frame, (0, 0), fx=resize_rate, fy=resize_rate)
 
     if flags['refresh'] and flags['ready_dec']:
-        # obs_dec.on_next(frame)
-        detect(frame)
+        obs_dec.on_next(frame)
         flags['refresh'] = False
     else:
         success = True
-        for i in trackers.keys():
-            success, box = trackers[i].update(small)
-            if not success:
-                trackers.pop(i)
-                boxes_track.pop(i)
-                labels.pop(i)
-                confidences.pop(i)
-            else:
-                boxes_track[i] = box
+        if multiTracker is not None:
+            success, boxes = multiTracker.update(small)
+            boxes_track = dict(enumerate(boxes))
+            print(success)
+        if not success:
+            flags['refresh'] = True
 
             # remain=time.time() - remain_record
             # if remain > remain_tolarence:
@@ -154,17 +144,14 @@ def stream():
         if flags['ready_track']:
             obs_track.on_next(frame)
 
-        boxes = boxes_track
-
-
-        for i in boxes.keys():
-            box=boxes[i]
+        for i in list(boxes_track):
+            box = boxes_track[i]
             drawLabel(frame,
-                    'id: ' + str(i) + ' ' + labels[i] + str(confidences[i]),
-                    int(box[0] / resize_rate), int(box[1] / resize_rate),
-                    int(box[0] / resize_rate + box[2] / resize_rate),
-                    int(box[1] / resize_rate + box[3] / resize_rate),
-                    (255, 255, 5))
+                      'id: ' + str(i) + ' ' + labels[i] + str(confidences[i]),
+                      int(box[0] / resize_rate), int(box[1] / resize_rate),
+                      int(box[0] / resize_rate + box[2] / resize_rate),
+                      int(box[1] / resize_rate + box[3] / resize_rate),
+                      (255, 255, 5))
 
         jpeg = cv2.imencode('.jpg', frame)[1]
         bts = jpeg.tobytes()
