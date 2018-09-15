@@ -18,9 +18,15 @@
                 <div class="active">menu</div>
             </li>
             <li id="ret" onclick=refresh()>
-                <div>refresh track</div>
+                <div>refresh detection</div>
             </li>
             {% if is_auth %}
+            <li id="ret" onclick=view()>
+                <div>check camera</div>
+            </li>
+            <li id="ret" onclick=config()>
+                <div>config alarm</div>
+            </li>
             <li id="ret" onclick=getalarm()>
                 <div>check alarm</div>
             </li>
@@ -45,8 +51,9 @@
     </nav>
     <section>
         <div id="alarm"></div>
-        <img id="view" style="-webkit-user-select: none;" src="http://127.0.0.1:3000/live">
-
+        {% block video %}
+        <img id="view" style="-webkit-user-select: none;" src={{host_live}}>
+        {% endblock video %}
         <div id="page">
             {% block page %} {% endblock page %}
         </div>

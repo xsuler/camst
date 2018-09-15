@@ -1,13 +1,14 @@
 from django.shortcuts import render, redirect, HttpResponse
 from django.http import HttpResponseForbidden
 from .models import User
-from campip.models import Alarm
-from .forms import LoginForm, RegisterForm, ChangePswForm
+from campip.models import Alarm, Region
+from .forms import LoginForm, RegisterForm, ChangePswForm, RegionForm
 import hashlib
 
 # config alarm
 # other detection
 # mp4
+
 
 def login(request):
     if request.method == 'POST':
@@ -59,10 +60,12 @@ def useropt(request, opt):
                 if 'username' in request.session:
                     user = User.objects.get(
                         username=request.session['username'])
-                    if user.password == hashlib.sha224(form.cleaned_data[
-                            'oldpassword'].encode()).hexdigest():
-                        user.password = hashlib.sha224(form.cleaned_data[
-                            'newpassword'].encode()).hexdigest()
+                    if user.password == hashlib.sha224(
+                            form.cleaned_data['oldpassword'].
+                            encode()).hexdigest():
+                        user.password = hashlib.sha224(
+                            form.cleaned_data['newpassword'].
+                            encode()).hexdigest()
                         user.state = 0
                         request.session['is_auth'] = False
                         user.save()
@@ -74,20 +77,49 @@ def useropt(request, opt):
                 username = form.cleaned_data['username']
                 password = form.cleaned_data['password']
                 password2 = form.cleaned_data['password2']
-                if username == "god":
-                    return redirect('/panel/userpage')
-                if not User.objects.all().filter(username=username):
-                    if form.pwd_validate(password, password2):
+                if not User.objects.get(username=username):
+                    if password == password2:
                         user = User(
                             username=username,
-                            password=hashlib.sha224(password.encode()).hexdigest())
+                            password=hashlib.sha224(
+                                password.encode()).hexdigest())
                         user.save()
-                        return redirect('/panel/userpage/')
-                    else:
-                        return redirect('/panel/userpage')
-                else:
-                    return redirect('/panel/userpage')
-            
+                return redirect('/panel/userpage')
+    return HttpResponseForbidden()
+
+
+def configopt(request, opt):
+    is_auth = getsession(request, 'is_auth', False)
+    if not is_auth:
+        return HttpResponseForbidden()
+    if opt == 0:
+        if request.method == 'POST':
+            form = RegionForm(request.POST)
+            if form.is_valid():
+                name = form.cleaned_data['name']
+                x = form.cleaned_data['x']
+                y = form.cleaned_data['y']
+                w = form.cleaned_data['w']
+                h = form.cleaned_data['h']
+                region = Region(name=name, x=x, y=y, w=w, h=h)
+                region.save()
+                return redirect('/panel/config')
+    return HttpResponseForbidden()
+
+
+def config(request):
+    is_auth = getsession(request, 'is_auth', False)
+    form_cfg = RegionForm()
+    regions = Region.objects.all()
+    usernm = getsession(request, 'username', 'stranger')
+    if is_auth:
+        context = {
+            'is_auth': is_auth,
+            'form_cfg': form_cfg,
+            'regions': regions,
+            'username': usernm
+        }
+        return render(request, 'panel/config.html', context)
     return HttpResponseForbidden()
 
 
@@ -122,9 +154,18 @@ def panel(request):
         'is_auth': is_auth,
         'alarms': alarms,
         'form': form,
-        'username': usernm
+        'username': usernm,
+        'host_live':'http://'+request.META['HTTP_HOST']+'/live'
     }
     return render(request, 'panel/panel.html', context)
+
+
+def delregion(request, pk):
+    is_auth = getsession(request, 'is_auth', False)
+    if not is_auth:
+        return HttpResponseForbidden()
+    Region.objects.get(pk=pk).delete()
+    return HttpResponse('ok')
 
 
 def deluser(request, pk):

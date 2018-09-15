@@ -113,7 +113,7 @@ footer {
 
 
 label[for=id_line],
-label[for=id_oldpassword]
+label[for=id_oldpassword],
 label[for=id_newpassword],
 label[for=id_password],
 label[for=id_username],

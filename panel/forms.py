@@ -15,4 +15,9 @@ class ChangePswForm(forms.Form):
     oldpassword = forms.CharField(label='old password', max_length=100, widget=forms.PasswordInput())
     newpassword = forms.CharField(label='new password', max_length=100, widget=forms.PasswordInput())
 
-
+class RegionForm(forms.Form):
+    name= forms.CharField(label='name', max_length=100)
+    x= forms.IntegerField(label='topleft x', max_value=100,min_value=0)
+    y= forms.IntegerField(label='topleft y', max_value=100,min_value=0)
+    w= forms.IntegerField(label='width', max_value=100,min_value=0)
+    h= forms.IntegerField(label='height', max_value=100,min_value=0)

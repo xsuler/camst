@@ -15,7 +15,7 @@ function fromStr(str) {
 }
 
 function socket() {
-    ws = new WebSocket('ws://127.0.0.1:3000/ws/alarm/');
+    ws = new WebSocket('ws://'+window.location.host+'/ws/alarm/');
     ws.onmessage = function(message) {
         data = JSON.parse(message.data);
         alarm = document.getElementById("alarm");
@@ -23,6 +23,12 @@ function socket() {
     };
 }
 
+function view() {
+    window.open('/panel/', '_self');
+}
+function config() {
+    window.open('/panel/config/', '_self');
+}
 function userpage() {
     window.open('/panel/userpage/', '_self');
 }
@@ -32,9 +38,10 @@ function getalarm() {
 }
 
 function refresh() {
-    httpGet('/live/refresh/', (t) => {
-    });
+    httpGet('/live/refresh/', (t) => {});
 }
+
+
 function delalarm(id) {
     url = '/panel/delalarm/';
     if (confirm("want to delete this record?")) {
@@ -43,7 +50,14 @@ function delalarm(id) {
         });
     }
 }
-
+function delregion(id) {
+    url = '/panel/config/delregion/';
+    if (confirm("want to delete this region?")) {
+        httpGet(url + id, (t) => {
+            window.open('/panel/config/', '_self');
+        });
+    }
+}
 function deluser(id) {
     url = '/panel/userpage/deluser/';
     if (confirm("want to delete this user?")) {

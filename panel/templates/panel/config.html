@@ -1,0 +1,37 @@
+{% extends "panel/panel.html" %} {% block page %}
+<div>
+    <form action="/panel/config/opt/0" method="post">
+        {% csrf_token %}
+        <table>
+            {{ form_cfg.as_table }}
+        </table>
+        <input type="submit" value="add region">
+    </form>
+</div>
+<div>
+    <table>
+        <tbody>
+            <tr>
+                <th>region name</th>
+                <th>topleft x</th>
+                <th>topleft y</th>
+                <th>width</th>
+                <th>height</th>
+            </tr>
+            {% for region in regions %}
+            <tr onclick=delregion({{region.id}})>
+                <th>{{region.name}}</th>
+                <th>{{region.x}}</th>
+                <th>{{region.y}}</th>
+                <th>{{region.w}}</th>
+                <th>{{region.h}}</th>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock page %}
+
+{% block video %}
+<img id="view" style="-webkit-user-select: none;">
+{% endblock video %}
