@@ -17,7 +17,13 @@ class ChangePswForm(forms.Form):
 
 class RegionForm(forms.Form):
     name= forms.CharField(label='name', max_length=100)
+    cover=forms.FloatField(label='cover', max_value=1,min_value=0)
+    delay=forms.FloatField(label='delay/s', min_value=0)
     x= forms.IntegerField(label='topleft x', max_value=100,min_value=0)
     y= forms.IntegerField(label='topleft y', max_value=100,min_value=0)
     w= forms.IntegerField(label='width', max_value=100,min_value=0)
     h= forms.IntegerField(label='height', max_value=100,min_value=0)
+
+class CamForm(forms.Form):
+    name= forms.CharField(label='name', max_length=100)
+    addr= forms.CharField(label='address', max_length=100)

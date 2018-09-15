@@ -17,9 +17,6 @@
             <li id="ret">
                 <div class="active">menu</div>
             </li>
-            <li id="ret" onclick=refresh()>
-                <div>refresh detection</div>
-            </li>
             {% if is_auth %}
             <li id="ret" onclick=view()>
                 <div>check camera</div>
@@ -30,8 +27,11 @@
             <li id="ret" onclick=getalarm()>
                 <div>check alarm</div>
             </li>
-            <li id="ret" onclick=userpage()>
-                <div>manage user</div>
+            <li id="ret" onclick=config()>
+                <div>config alarm</div>
+            </li>
+            <li id="ret" onclick=camera()>
+                <div>config camera</div>
             </li>
             {% endif %}
         </menu>

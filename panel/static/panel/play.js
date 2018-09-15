@@ -26,6 +26,9 @@ function socket() {
 function view() {
     window.open('/panel/', '_self');
 }
+function camera() {
+    window.open('/panel/camera/', '_self');
+}
 function config() {
     window.open('/panel/config/', '_self');
 }
@@ -47,6 +50,15 @@ function delalarm(id) {
     if (confirm("want to delete this record?")) {
         httpGet(url + id, (t) => {
             window.open('/panel/getalarm/', '_self');
+        });
+    }
+}
+
+function choosecam(id) {
+    url = '/panel/camera/choosecam/';
+    if (confirm("want to use this camera?")) {
+        httpGet(url + id, (t) => {
+            window.open('/panel/camera/', '_self');
         });
     }
 }

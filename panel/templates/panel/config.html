@@ -13,6 +13,8 @@
         <tbody>
             <tr>
                 <th>region name</th>
+                <th>iou</th>
+                <th>delay/s</th>
                 <th>topleft x</th>
                 <th>topleft y</th>
                 <th>width</th>
@@ -21,6 +23,8 @@
             {% for region in regions %}
             <tr onclick=delregion({{region.id}})>
                 <th>{{region.name}}</th>
+                <th>{{region.cover}}</th>
+                <th>{{region.delay}}</th>
                 <th>{{region.x}}</th>
                 <th>{{region.y}}</th>
                 <th>{{region.w}}</th>

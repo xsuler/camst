@@ -5,16 +5,10 @@ from darkflow.net.build import TFNet
 import time
 from rx import subjects
 from rx.concurrency import NewThreadScheduler
-# import face_recognition
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Alarm, Region
+from .models import Alarm, Region, Cam
 from random import randint
-
-# config alarm
-# clean project
-# install script
-# doc
 
 options_object = {
     "model": "cfg/yolov2-tiny.cfg",
@@ -25,49 +19,19 @@ options_object = {
 
 channel_layer = get_channel_layer()
 
-# options_face = {
-#     "model": "cfg/tiny-yolo-face.cfg",
-#     "load": "bin/tiny-yolo-face.weights",
-#     "labels": "labels_face",
-#     "threshold": 0.5
-# }
-
 tfnet_object = TFNet(options_object)
-# tfnet_face = TFNet(options_face)
 channel_name = ''
 labels = {}
 confidences = {}
 boxes_track = {}
+alarm_delay = {}
 flags = {'refresh': True, 'ready_track': True, 'ready_dec': True}
 
 multiTracker = None
 resize_rate = 1
 framew = 0
 frameh = 0
-
-# objects = tfnet_object.return_predict(frame)
-
-# faces=[]
-
-# form_faces = list(
-#     map(
-#         lambda result: (result['topleft']['x'], result['topleft']['y'], result['bottomright']['x'], result['bottomright']['y']),
-#         faces))
-# encodings = face_recognition.face_encodings(frame, form_faces)
-
-# rec = 0
-# for face in encodings:
-#     matches = face_recognition.compare_faces(memo, face, tolerance=0.5)
-#     if not any(matches):
-#         memo.append(face)
-#         rec += 1
-
-# alarmc = '%d new in %d face' % (rec, len(faces))
-# async_to_sync(channel_layer.send)(channel_name, {
-#     'type': 'send.alarm',
-#     'info': alarmc
-# })
-# Alarm.objects.create(content=alarmc)
+camaddr = None
 
 
 def detect(frame):
@@ -91,6 +55,7 @@ def detect(frame):
         confidences[i] = result['confidence']
         multiTracker.add(tracker, small, box)
 
+    alarm_delay.clear()
     print(time.time() - start)
 
     flags['ready_dec'] = True
@@ -100,6 +65,18 @@ obs_dec = subjects.Subject()
 obs_dec.observe_on(NewThreadScheduler()).subscribe(on_next=detect)
 
 
+def cover(box1, box2):
+    left = max(box1[0], box2[0])
+    rignt = min(box1[2], box2[2])
+    top = max(box1[1], box2[1])
+    bottom = min(box1[3], box2[3])
+    if rignt < left or bottom < top:
+        return 0
+    arb2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
+    arbi = (rignt - left) * (bottom - top)
+    return arbi / arb2
+
+
 def ralarm(v):
     alarm_regions = Region.objects.all()
     for i in list(boxes_track):
@@ -107,24 +84,29 @@ def ralarm(v):
             continue
         x, y, w, h = boxes_track[i]
         for region in map(
-                lambda region: (region.name, region.x * framew / 100, region.y * frameh / 100, region.w * framew / 100, region.h * frameh / 100),
+                lambda region: (region.name, region.x * framew / 100, region.y * frameh / 100, region.w * framew / 100, region.h * frameh / 100, region.cover, region.delay),
                 alarm_regions):
-            if inbox(x, y, region) or inbox(x + w, y, region) or inbox(
-                    x, y + h, region) or inbox(x + w, y + h, region):
-                alarmc = 'object %s with id %d appears in region %s : %s' % (
-                    labels[i], i, region[0],
-                    (region[1], region[2], region[1] + region[3],
-                     region[2] + region[4]))
-                async_to_sync(channel_layer.send)(channel_name, {
-                    'type': 'send.alarm',
-                    'info': alarmc
-                })
-                Alarm.objects.create(content=alarmc)
-
-
-def inbox(x, y, region):
-    nm, bx, by, bw, bh = region
-    return bx < x < bx + bw and by < y < by + bh
+            box1 = (x, y, x + w, y + h)
+            box2 = (region[1], region[2], region[1] + region[3],
+                    region[2] + region[4])
+            coverf = cover(box2, box1)
+            if coverf >= region[5]:
+                if i in alarm_delay:
+                    print('delay', time.time() - alarm_delay[i][1])
+                    if time.time() - alarm_delay[i][1] > region[6]:
+                        alarm_delay[i][1] = time.time()
+                        alarmc = 'object %s with id %d appears in region %s, cover: %f, existing for %f seconds' % (
+                            labels[i], i, region[0], coverf,
+                            time.time() - alarm_delay[i][0])
+                        async_to_sync(channel_layer.send)(
+                            channel_name, {
+                                'type': 'send.alarm',
+                                'info': alarmc
+                            })
+                        Alarm.objects.create(content=alarmc)
+                else:
+                    tm = time.time()
+                    alarm_delay[i] = [tm, tm]
 
 
 obs_alarm = subjects.Subject()
@@ -146,7 +128,7 @@ def send(frame):
             success, boxes = multiTracker.update(small)
             boxes_track = dict(enumerate(boxes))
             obs_alarm.on_next(None)
-        if not success:
+        if not success or len(boxes_track) == 0:
             flags['refresh'] = True
     flags['ready_track'] = True
 
@@ -156,11 +138,12 @@ obs_track.observe_on(NewThreadScheduler()).subscribe(on_next=send)
 
 
 def stream():
-    global resize_rate, framew, frameh
-    rtmp = "http://ivi.bupt.edu.cn/hls/cctv5phd.m3u8"
-    # rtmp='http://153.156.230.207:8084/-wvhttp-01-/GetOneShot?image_size=640x480&frame_count=1000000000'
-    # rtmp='rtsp://admin:admin@59.66.68.38:554/cam/realmonitor?channel=1&subtype=0'
-    stream = cv2.VideoCapture(rtmp)
+    global resize_rate, framew, frameh, camaddr
+    if camaddr is None:
+        camaddr = Cam.objects.last().addr
+    if camaddr == '0':
+        camaddr = 0
+    stream = cv2.VideoCapture(camaddr)
     frame = stream.read()[1]
     while frame is None:
         frame = stream.read()[1]
@@ -184,6 +167,8 @@ def stream():
                       (255, 255, 255), 4)
 
         for i in list(boxes_track):
+            if i not in boxes_track:
+                continue
             box = boxes_track[i]
             drawLabel(
                 frame, 'id: ' + str(i) + ' ' + labels[i] + str(confidences[i]),

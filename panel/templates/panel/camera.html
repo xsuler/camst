@@ -1,0 +1,31 @@
+{% extends "panel/panel.html" %} {% block page %}
+<div>
+    <form action="/panel/camera/opt/0" method="post">
+        {% csrf_token %}
+        <table>
+            {{ form_cam.as_table }}
+        </table>
+        <input type="submit" value="add camera">
+    </form>
+</div>
+<div>
+    <table>
+        <tbody>
+            <tr>
+                <th>name</th>
+                <th>address</th>
+            </tr>
+            {% for cam in cams %}
+            <tr onclick=choosecam({{cam.id}})>
+                <th>{{cam.name}}</th>
+                <th>{{cam.addr}}</th>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock page %}
+
+{% block video %}
+<img id="view" style="-webkit-user-select: none;" src={{host_live}}>
+{% endblock video %}
