@@ -90,14 +90,14 @@ def ralarm(v):
             box2 = (region[1], region[2], region[1] + region[3],
                     region[2] + region[4])
             coverf = cover(box2, box1)
+            key=(i,region[0])
             if coverf >= region[5]:
-                if i in alarm_delay:
-                    print('delay', time.time() - alarm_delay[i][1])
-                    if time.time() - alarm_delay[i][1] > region[6]:
-                        alarm_delay[i][1] = time.time()
+                if key in alarm_delay:
+                    if time.time() - alarm_delay[key][1] > region[6]:
+                        alarm_delay[key][1] = time.time()
                         alarmc = 'object %s with id %d appears in region %s, cover: %f, existing for %f seconds' % (
                             labels[i], i, region[0], coverf,
-                            time.time() - alarm_delay[i][0])
+                            time.time() - alarm_delay[key][0])
                         async_to_sync(channel_layer.send)(
                             channel_name, {
                                 'type': 'send.alarm',
@@ -106,7 +106,7 @@ def ralarm(v):
                         Alarm.objects.create(content=alarmc)
                 else:
                     tm = time.time()
-                    alarm_delay[i] = [tm, tm]
+                    alarm_delay[key] = [tm, tm]
 
 
 obs_alarm = subjects.Subject()
@@ -143,19 +143,19 @@ def stream():
         camaddr = Cam.objects.last().addr
     if camaddr == '0':
         camaddr = 0
-    stream = cv2.VideoCapture(camaddr)
-    frame = stream.read()[1]
+    v_stream = cv2.VideoCapture(camaddr)
+    frame = v_stream.read()[1]
     while frame is None:
-        frame = stream.read()[1]
+        frame = v_stream.read()[1]
     resize_rate = 800 / frame.shape[1]
     framew = frame.shape[1]
     frameh = frame.shape[0]
 
     print('resize_rate: %f' % resize_rate)
     while True:
-        frame = stream.read()[1]
+        frame = v_stream.read()[1]
         while frame is None:
-            frame = stream.read()[1]
+            frame = v_stream.read()[1]
         if flags['ready_track']:
             obs_track.on_next(frame)
         alarm_regions = Region.objects.all()
@@ -180,6 +180,7 @@ def stream():
         bts = jpeg.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + bts + b'\r\n\r\n')
+
 
 
 def drawLabel(img, txt, l, t, r, b, color, px):
