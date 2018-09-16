@@ -43,7 +43,6 @@ def detect(frame):
     result_detect = tfnet_object.return_predict(frame)
     multiTracker = cv2.MultiTracker_create()
     for i, result in enumerate(result_detect):
-        # tracker = cv2.TrackerCSRT_create()
         box = (result['topleft']['x'] * resize_rate,
                result['topleft']['y'] * resize_rate,
                result['bottomright']['x'] * resize_rate -
@@ -90,7 +89,7 @@ def ralarm(v):
             box2 = (region[1], region[2], region[1] + region[3],
                     region[2] + region[4])
             coverf = cover(box2, box1)
-            key=(i,region[0])
+            key = (i, region[0])
             if coverf >= region[5]:
                 if key in alarm_delay:
                     if time.time() - alarm_delay[key][1] > region[6]:
@@ -180,7 +179,6 @@ def stream():
         bts = jpeg.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + bts + b'\r\n\r\n')
-
 
 
 def drawLabel(img, txt, l, t, r, b, color, px):

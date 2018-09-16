@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect, HttpResponse
 from django.http import HttpResponseForbidden
 from .models import User
-from campip.models import Alarm, Region,Cam
+from campip.models import Alarm, Region, Cam
 import campip.views
-from .forms import LoginForm, RegisterForm, ChangePswForm, RegionForm,CamForm
+from .forms import LoginForm, RegisterForm, ChangePswForm, RegionForm, CamForm
 import hashlib
 
 
@@ -74,7 +74,7 @@ def useropt(request, opt):
                 username = form.cleaned_data['username']
                 password = form.cleaned_data['password']
                 password2 = form.cleaned_data['password2']
-                if not User.objects.get(username=username):
+                if User.objects.filter(username=username).count()==0:
                     if password == password2:
                         user = User(
                             username=username,
@@ -93,12 +93,13 @@ def cameraopt(request, opt):
         if request.method == 'POST':
             form = CamForm(request.POST)
             if form.is_valid():
-                name= form.cleaned_data['name']
-                addr= form.cleaned_data['addr']
-                cam = Cam(addr=addr,name=name)
+                name = form.cleaned_data['name']
+                addr = form.cleaned_data['addr']
+                cam = Cam(addr=addr, name=name)
                 cam.save()
                 return redirect('/panel/camera')
     return HttpResponseForbidden()
+
 
 def configopt(request, opt):
     is_auth = getsession(request, 'is_auth', False)
@@ -109,33 +110,34 @@ def configopt(request, opt):
             form = RegionForm(request.POST)
             if form.is_valid():
                 name = form.cleaned_data['name']
-                cover= form.cleaned_data['cover']
-                delay= form.cleaned_data['delay']
+                cover = form.cleaned_data['cover']
+                delay = form.cleaned_data['delay']
                 x = form.cleaned_data['x']
                 y = form.cleaned_data['y']
                 w = form.cleaned_data['w']
                 h = form.cleaned_data['h']
-                region = Region(name=name,cover=cover,delay=delay, x=x, y=y, w=w, h=h)
+                region = Region(
+                    name=name, cover=cover, delay=delay, x=x, y=y, w=w, h=h)
                 region.save()
                 return redirect('/panel/config')
     return HttpResponseForbidden()
 
+
 def camera(request):
     is_auth = getsession(request, 'is_auth', False)
     form_cam = CamForm()
-    cams =Cam.objects.all()
+    cams = Cam.objects.all()
     usernm = getsession(request, 'username', 'stranger')
     if is_auth:
         context = {
             'is_auth': is_auth,
             'form_cam': form_cam,
-            'cams':cams,
+            'cams': cams,
             'username': usernm,
             'host_live': 'http://' + request.META['HTTP_HOST'] + '/live'
         }
         return render(request, 'panel/camera.html', context)
     return HttpResponseForbidden()
-
 
 
 def config(request):
@@ -195,7 +197,7 @@ def choosecam(request, pk):
     is_auth = getsession(request, 'is_auth', False)
     if not is_auth:
         return HttpResponseForbidden()
-    campip.views.camaddr=Cam.objects.get(pk=pk).addr
+    campip.views.camaddr = Cam.objects.get(pk=pk).addr
     return HttpResponse('ok')
 
 
